@@ -156,12 +156,70 @@ function Dashboard() {
 
   // Export charts as images
   const exportCharts = () => {
-    const canvas = document.querySelector('#visitsChart');
-    if (canvas) {
-      const link = document.createElement('a');
-      link.download = `library-charts-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL();
-      link.click();
+    try {
+      // Wait a bit for charts to render
+      setTimeout(() => {
+        // Find all chart canvas elements
+        const chartCanvases = document.querySelectorAll('canvas');
+        
+        if (chartCanvases.length === 0) {
+          alert('No charts found to export. Please wait for charts to load completely.');
+          return;
+        }
+
+        console.log(`Found ${chartCanvases.length} charts to export`);
+
+        // If only one chart, export it directly
+        if (chartCanvases.length === 1) {
+          const canvas = chartCanvases[0];
+          const link = document.createElement('a');
+          link.download = `library-chart-${new Date().toISOString().split('T')[0]}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          return;
+        }
+
+        // For multiple charts, create a combined image
+        const combinedCanvas = document.createElement('canvas');
+        const ctx = combinedCanvas.getContext('2d');
+        
+        // Set dimensions for combined canvas
+        const chartWidth = 800;
+        const chartHeight = 400;
+        const spacing = 30;
+        const totalHeight = (chartHeight + spacing) * chartCanvases.length;
+        
+        combinedCanvas.width = chartWidth;
+        combinedCanvas.height = totalHeight;
+        
+        // Fill with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, chartWidth, totalHeight);
+        
+        // Add title
+        ctx.fillStyle = '#800000';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Goa Community Library - Analytics Report', chartWidth / 2, 30);
+        
+        // Draw each chart
+        chartCanvases.forEach((canvas, index) => {
+          const y = 50 + (index * (chartHeight + spacing));
+          ctx.drawImage(canvas, 0, y, chartWidth, chartHeight);
+        });
+        
+        // Download the combined image
+        const link = document.createElement('a');
+        link.download = `library-charts-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = combinedCanvas.toDataURL('image/png');
+        link.click();
+        
+        console.log('Charts exported successfully');
+      }, 1000); // Wait 1 second for charts to fully render
+      
+    } catch (error) {
+      console.error('Error exporting charts:', error);
+      alert('Error exporting charts. Please make sure charts are fully loaded and try again.');
     }
   };
 
@@ -322,11 +380,12 @@ function Dashboard() {
               className="btn btn-outline-primary btn-sm"
               onClick={exportStudentActivities}
             >
-              <i className="bi bi-download"></i> Export Report
+              <i className="bi bi-file-earmark-excel"></i> Export Report
             </button>
             <button 
               className="btn btn-outline-secondary btn-sm"
               onClick={exportCharts}
+              title="Export all charts as PNG image"
             >
               <i className="bi bi-image"></i> Export Charts
             </button>
